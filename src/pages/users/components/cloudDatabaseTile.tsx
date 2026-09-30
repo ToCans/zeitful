@@ -55,6 +55,18 @@ const CloudDatabaseTile = () => {
 	const credentialsInputRef = useRef<HTMLInputElement>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 
+	const showError = useCallback(
+		(detail: string) => {
+			toast?.show({
+				severity: 'error',
+				summary: 'Error',
+				detail,
+				life: 3000,
+			});
+		},
+		[toast],
+	);
+
 	const handleCloudCredentialsImportClick = () => {
 		credentialsInputRef.current?.click();
 	};
@@ -62,12 +74,16 @@ const CloudDatabaseTile = () => {
 	const handleCloudDatabaseFileUpload = async (
 		e: React.ChangeEvent<HTMLInputElement>,
 	) => {
+		const input = e.target;
+
 		try {
-			const file = e.target.files?.[0];
+			const file = input.files?.[0];
 			if (!file) {
 				console.log('Error: Cloud Credentials File not found.');
 				return;
 			}
+
+			setIsLoading(true);
 
 			const credentialResponse = await importCloudDatabaseCredentials(file);
 
@@ -78,28 +94,54 @@ const CloudDatabaseTile = () => {
 					detail: credentialResponse.message,
 					life: 3000,
 				});
-			} else {
-				const supabaseClient = createClient(
-					credentialResponse.cloudCredentials['database_url'],
-					credentialResponse.cloudCredentials['api_key'],
-					{
-						auth: {
-							persistSession: false,
-							autoRefreshToken: false,
-							detectSessionInUrl: false,
-						},
-					},
-				);
-				setCloudDatabase(supabaseClient);
+				return;
 			}
-		} catch (err) {
-			toast?.show({
-				severity: 'error',
-				summary: 'Error',
-				detail: 'Incorrect credentials provided.',
-				life: 3000,
+
+			const { database_url, api_key, email, password } =
+				credentialResponse.cloudCredentials ?? {};
+
+			if (!database_url || !api_key || !email || !password) {
+				showError(
+					'Credentials file must contain database_url, api_key, email and password.',
+				);
+				return;
+			}
+
+			const supabaseClient = createClient(database_url, api_key, {
+				auth: {
+					persistSession: false,
+					// Keeps the session alive while the tab is open
+					autoRefreshToken: true,
+					detectSessionInUrl: false,
+				},
 			});
+
+			// Sign in so requests run as `authenticated` instead of `anon`
+			const { error: signInError } =
+				await supabaseClient.auth.signInWithPassword({ email, password });
+
+			if (signInError) {
+				// Stop the client's background refresh timer before discarding it
+				await supabaseClient.auth.signOut();
+				showError(`Sign-in failed: ${signInError.message}`);
+				return;
+			}
+
+			// Sign out of any previously connected client
+			if (cloudDatabase) {
+				await cloudDatabase.auth.signOut().catch(() => undefined);
+			}
+
+			setCloudDatabase(supabaseClient);
+			// Allow the auto-sync effect to run for the new connection
+			setHasSynced(false);
+		} catch (err) {
+			showError('Incorrect credentials provided.');
 			console.error(err);
+		} finally {
+			setIsLoading(false);
+			// Lets the same file be selected again after a failed attempt
+			input.value = '';
 		}
 	};
 
@@ -116,6 +158,14 @@ const CloudDatabaseTile = () => {
 
 		try {
 			setIsLoading(true);
+
+			// Make sure there is still a valid session before syncing
+			const { data: sessionData } = await cloudDatabase.auth.getSession();
+			if (!sessionData.session) {
+				showError('Cloud session expired. Please upload your credentials again.');
+				setCloudDatabase(null);
+				return;
+			}
 
 			// Syncing Mechanism
 			const localData = await getLocalDatabaseData();
@@ -168,7 +218,16 @@ const CloudDatabaseTile = () => {
 			setIsLoading(false);
 			isSyncingRef.current = false;
 		}
-	}, [cloudDatabase, setAppSettings, setWorkTopics, setWorkTasks, setWorkEntries, toast]);
+	}, [
+		cloudDatabase,
+		setCloudDatabase,
+		setAppSettings,
+		setWorkTopics,
+		setWorkTasks,
+		setWorkEntries,
+		showError,
+		toast,
+	]);
 
 	useEffect(() => {
 		if (useCloudDatabase && cloudDatabase !== null && !hasSynced) {
