@@ -1,20 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
-import { Tooltip } from 'primereact/tooltip';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { useSettingsStore } from '../../stores/useSettingsStore';
-import { useDataStore } from '../../stores/useDataStore';
-
-interface HeatmapDataPoint {
-  date: Date;
-  value: number;
-  label?: string;
-}
 
 interface HeatmapProps {
   itemFilter: 'Task' | 'Topic' | string;
@@ -26,7 +15,6 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('week');
-  const [heatmapData, setHeatmapData] = useState<HeatmapDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,26 +25,6 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
       // Simulate API call delay
       setTimeout(() => {
         try {
-          // Generate mock heatmap data based on work entries
-          const mockData: HeatmapDataPoint[] = [];
-          const today = new Date();
-          
-          // Create data points for the last 30 days
-          for (let i = 0; i < 30; i++) {
-            const date = new Date();
-            date.setDate(today.getDate() - i);
-            
-            // Generate random values for demonstration
-            const randomValue = Math.floor(Math.random() * 100);
-            
-            mockData.push({
-              date: date,
-              value: randomValue,
-              label: `${itemFilter} ${i}`
-            });
-          }
-          
-          setHeatmapData(mockData);
           setIsLoading(false);
         } catch (err) {
           setError('Failed to generate heatmap data');
