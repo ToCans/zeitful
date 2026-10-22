@@ -2,6 +2,7 @@
 import ItemPercentageBreakdown from './itemPercentageBreakdown';
 import OverallStats from './overallStats';
 import PiChart from './piChart';
+import Heatmap from '../../components/heatmap/Heatmap';
 // Hook Imports
 import UseGatherGroupedData from '../hooks/useGatherGroupedData';
 // Store Imports

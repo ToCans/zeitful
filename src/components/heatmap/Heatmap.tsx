@@ -5,6 +5,12 @@ import { Dropdown } from 'primereact/dropdown';
 import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
 
+interface HeatmapDataPoint {
+  date: Date;
+  value: number;
+  label?: string;
+}
+
 interface HeatmapProps {
   itemFilter: 'Task' | 'Topic' | string;
   timeFilteredWorkEntries: any[] | null;
