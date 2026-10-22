@@ -84,18 +84,20 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
       // Generate mock values for demonstration
       const value = Math.floor(Math.random() * 100);
       
-      // Determine color based on value
+      // Determine color based on value (white = no activity, darker green = more activity)
       let cellColor = '';
-      if (value > 80) {
-        cellColor = 'bg-red-500';
-      } else if (value > 60) {
-        cellColor = 'bg-orange-500';
-      } else if (value > 40) {
-        cellColor = 'bg-yellow-500';
-      } else if (value > 20) {
-        cellColor = 'bg-green-500';
+      if (value === 0) {
+        cellColor = 'bg-white'; // No activity - white
+      } else if (value <= 20) {
+        cellColor = 'bg-green-100'; // Low activity - light green
+      } else if (value <= 40) {
+        cellColor = 'bg-green-300'; // Medium activity - medium green
+      } else if (value <= 60) {
+        cellColor = 'bg-green-500'; // High activity - darker green
+      } else if (value <= 80) {
+        cellColor = 'bg-green-700'; // Very high activity - dark green
       } else {
-        cellColor = 'bg-gray-200';
+        cellColor = 'bg-green-900'; // Extremely high activity - darkest green
       }
       
       grid.push(
@@ -182,23 +184,27 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
           
           <div className="flex flex-wrap justify-center gap-2 mt-4">
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-white rounded mr-2"></div>
+              <span className="text-xs">No Activity</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-green-100 rounded mr-2"></div>
               <span className="text-xs">Low</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-green-300 rounded mr-2"></div>
               <span className="text-xs">Medium</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
               <span className="text-xs">High</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-orange-500 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-green-700 rounded mr-2"></div>
               <span className="text-xs">Very High</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-green-900 rounded mr-2"></div>
               <span className="text-xs">Extremely High</span>
             </div>
           </div>

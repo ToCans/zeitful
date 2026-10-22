@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, CalendarProps } from 'primereact/calendar';
+import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
@@ -9,7 +9,6 @@ import { Tooltip } from 'primereact/tooltip';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useDataStore } from '../../stores/useDataStore';
-import { format } from 'date-fns';
 
 interface HeatmapDataPoint {
   date: Date;
@@ -72,38 +71,34 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
       return <p className="text-center">No data available for heatmap</p>;
     }
 
-    // Generate a grid of dates for the heatmap
-    const dateGrid: { [key: string]: number } = {};
+    // Create a grid for heatmap visualization
+    const grid = [];
     const today = new Date();
     
-    // Create a grid for the last 30 days
-    for (let i = 0; i < 30; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const dateString = format(date, 'yyyy-MM-dd');
-      dateGrid[dateString] = Math.floor(Math.random() * 100); // Mock values
-    }
-
-    // Generate heatmap cells
-    const heatmapCells = [];
-    const todayFormatted = format(today, 'yyyy-MM-dd');
-    
+    // Create cells for a 7x7 grid (representing 7 days of activity)
     for (let i = 0; i < 7; i++) {
       const date = new Date();
       date.setDate(today.getDate() - i);
-      const dateString = format(date, 'yyyy-MM-dd');
+      const dateString = date.toISOString().split('T')[0];
       
-      let value = 0;
-      if (dateGrid[dateString]) {
-        value = dateGrid[dateString];
+      // Generate mock values for demonstration
+      const value = Math.floor(Math.random() * 100);
+      
+      // Determine color based on value
+      let cellColor = '';
+      if (value > 80) {
+        cellColor = 'bg-red-500';
+      } else if (value > 60) {
+        cellColor = 'bg-orange-500';
+      } else if (value > 40) {
+        cellColor = 'bg-yellow-500';
+      } else if (value > 20) {
+        cellColor = 'bg-green-500';
+      } else {
+        cellColor = 'bg-gray-200';
       }
       
-      const cellColor = value > 80 ? 'bg-red-500' : 
-                       value > 60 ? 'bg-orange-500' : 
-                       value > 40 ? 'bg-yellow-500' : 
-                       value > 20 ? 'bg-green-500' : 'bg-gray-200';
-      
-      heatmapCells.push(
+      grid.push(
         <div 
           key={dateString} 
           className={`w-10 h-10 rounded-lg ${cellColor} flex items-center justify-center text-xs`}
@@ -116,7 +111,7 @@ const Heatmap = ({ itemFilter, timeFilteredWorkEntries, darkMode }: HeatmapProps
     
     return (
       <div className="grid grid-cols-7 gap-1 p-2">
-        {heatmapCells}
+        {grid}
       </div>
     );
   };
