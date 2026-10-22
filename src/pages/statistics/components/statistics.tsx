@@ -4,6 +4,7 @@ import TimeFrameSelection from './timeFrameSelect';
 import { Dropdown } from 'primereact/dropdown';
 import DataVisualizationPanel from './dataVisualizationPanel';
 import ItemFilterButton from './itemFilterButton';
+import Heatmap from '../../components/heatmap/Heatmap';
 // Hook Imports
 import useGatherPeriodData from '../hooks/useGatherPeriodData';
 // React Imports
