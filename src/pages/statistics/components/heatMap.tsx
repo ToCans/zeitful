@@ -66,12 +66,14 @@ const Heatmap = ({
     workEntries: timeFilteredWorkEntries,
   });
 
+  // Anchor to the hovered tile itself (GitHub-style), not the cursor.
   const showTooltip = (value: number, e: ReactMouseEvent) => {
     const text =
       value === 0
         ? "No time recorded"
         : `${formatMinutes(value)} minutes worked`;
-    setTooltip({ text, x: e.clientX, y: e.clientY });
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({ text, x: rect.left + rect.width / 2, y: rect.top });
   };
 
   if (!heatmapData) return null;
@@ -86,13 +88,21 @@ const Heatmap = ({
           className="pointer-events-none fixed z-50 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg"
           style={{
             left: tooltip.x,
-            top: tooltip.y - 6,
+            top: tooltip.y - 2,
             transform: "translate(-50%, -100%)",
             backgroundColor: darkMode ? "#52525B" : "#18181b",
             color: "#fafafa",
           }}
         >
           {tooltip.text}
+          <div
+            className="absolute left-1/2 -bottom-1 -translate-x-1/2 h-0 w-0"
+            style={{
+              borderLeft: "5px solid transparent",
+              borderRight: "5px solid transparent",
+              borderTop: `5px solid ${darkMode ? "#52525B" : "#18181b"}`,
+            }}
+          />
         </div>
       )}
 
@@ -119,7 +129,6 @@ const Heatmap = ({
                 key={i}
                 className="h-6 rounded-sm"
                 onMouseEnter={(e) => showTooltip(v, e)}
-                onMouseMove={(e) => showTooltip(v, e)}
                 onMouseLeave={() => setTooltip(null)}
                 style={{
                   backgroundColor:
