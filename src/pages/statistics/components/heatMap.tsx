@@ -1,5 +1,6 @@
 // React Imports
 import { Fragment, useState } from "react";
+import { createPortal } from "react-dom";
 import type { MouseEvent as ReactMouseEvent } from "react";
 // Hook Imports
 import useGatherHeatmapData from "../hooks/useGatherHeatmapData";
@@ -99,29 +100,31 @@ const Heatmap = ({
 
   return (
     <div className="w-full h-full overflow-auto p-1">
-      {tooltip && (
-        <div
-          className="pointer-events-none fixed z-50 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y - 2,
-            transform: "translate(-50%, -100%)",
-            backgroundColor: darkMode ? "#52525B" : "#18181b",
-            color: "#fafafa",
-          }}
-        >
-          <div>{tooltip.label}</div>
-          <div className="mt-0.5">{tooltip.text}</div>
+      {tooltip &&
+        createPortal(
           <div
-            className="absolute left-1/2 -bottom-1 -translate-x-1/2 h-0 w-0"
+            className="pointer-events-none fixed z-50 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg"
             style={{
-              borderLeft: "5px solid transparent",
-              borderRight: "5px solid transparent",
-              borderTop: `5px solid ${darkMode ? "#52525B" : "#18181b"}`,
+              left: tooltip.x,
+              top: tooltip.y - 2,
+              transform: "translate(-50%, -100%)",
+              backgroundColor: darkMode ? "#52525B" : "#18181b",
+              color: "#fafafa",
             }}
-          />
-        </div>
-      )}
+          >
+            <div>{tooltip.label}</div>
+            <div className="mt-0.5">{tooltip.text}</div>
+            <div
+              className="absolute left-1/2 -bottom-1 -translate-x-1/2 h-0 w-0"
+              style={{
+                borderLeft: "5px solid transparent",
+                borderRight: "5px solid transparent",
+                borderTop: `5px solid ${darkMode ? "#52525B" : "#18181b"}`,
+              }}
+            />
+          </div>,
+          document.body
+        )}
 
       <div
         className="grid gap-1 items-center text-xs"
