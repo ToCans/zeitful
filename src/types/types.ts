@@ -127,6 +127,7 @@ export type HeatmapRow = {
   label: string;
   values: number[]; // one value per column
   total: number;
+  color: number; // related task/topic color (int, see utils/colors)
 };
 
 export type HeatmapData = {

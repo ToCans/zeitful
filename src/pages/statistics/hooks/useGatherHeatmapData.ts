@@ -8,13 +8,38 @@ import type {
   StatisticsTab,
   TimePeriod,
   WorkEntry,
+  WorkTask,
+  WorkTopic,
 } from "../../../types/types";
 
 interface UseGatherHeatmapDataProps {
   itemFilter: StatisticsTab;
   timeFrame: TimePeriod;
   workEntries: WorkEntry[] | null; // already filtered to the selected period
+  workTasks: WorkTask[];
+  workTopics: WorkTopic[];
 }
+
+// Default gray when no color is found (matches utils.ts)
+const DEFAULT_COLOR = 8947848;
+
+const getColorForId = (
+  id: string,
+  itemFilter: StatisticsTab,
+  workTasks: WorkTask[],
+  workTopics: WorkTopic[],
+): number => {
+  if (itemFilter === "Topic") {
+    const topic = workTopics.find((t) => t.id === id);
+    return topic?.color ?? DEFAULT_COLOR;
+  }
+  // Task rows take the color of their parent topic
+  const task = workTasks.find((t) => t.id === id);
+  const topic = task
+    ? workTopics.find((t) => t.id === task.topic_id)
+    : undefined;
+  return topic?.color ?? DEFAULT_COLOR;
+};
 
 const WEEK_COLUMNS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const YEAR_COLUMNS = [
@@ -48,6 +73,8 @@ const useGatherHeatmapData = ({
   itemFilter,
   timeFrame,
   workEntries,
+  workTasks,
+  workTopics,
 }: UseGatherHeatmapDataProps) => {
   const heatmapData = useMemo<HeatmapData | null>(() => {
     if (!workEntries) return null;
@@ -87,6 +114,7 @@ const useGatherHeatmapData = ({
           label,
           values: new Array(columns.length).fill(0),
           total: 0,
+          color: getColorForId(id, itemFilter, workTasks, workTopics),
         };
         rowsById.set(id, row);
       }
@@ -102,7 +130,7 @@ const useGatherHeatmapData = ({
     const maxValue = Math.max(0, ...rows.flatMap((r) => r.values));
 
     return { columns, rows, maxValue };
-  }, [itemFilter, timeFrame, workEntries]);
+  }, [itemFilter, timeFrame, workEntries, workTasks, workTopics]);
 
   return { heatmapData, isLoading: !workEntries };
 };

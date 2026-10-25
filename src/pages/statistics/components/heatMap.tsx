@@ -3,6 +3,8 @@ import { Fragment, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 // Hook Imports
 import useGatherHeatmapData from "../hooks/useGatherHeatmapData";
+// Component Imports
+import ColorIcon from "../../../components/ItemManager/colorIcon";
 // Store Imports
 import { useSettingsStore } from "../../../stores/useSettingsStore";
 // Type Imports
@@ -11,6 +13,10 @@ import type {
   TimePeriod,
   WorkEntry,
 } from "../../../types/types";
+// Store Imports
+import { useDataStore } from "../../../stores/useDataStore";
+// Utils Imports
+import { intToColor } from "../../../utils/colors";
 
 interface HeatmapProps {
   itemFilter: StatisticsTab;
@@ -18,9 +24,9 @@ interface HeatmapProps {
   timeFilteredWorkEntries: WorkEntry[] | null;
 }
 
-// ASSUMPTION: duration is in seconds. Adjust if it's minutes/ms.
-const formatMinutes = (seconds: number) =>
-  Math.max(1, Math.round(seconds / 60));
+// duration is stored in minutes.
+const formatMinutes = (minutes: number) =>
+  Math.max(1, Math.round(minutes));
 
 // Categorical green heat scale: index 0 = lightest (light work),
 // last = darkest (lots of work). Zero cells keep the gray tile.
@@ -47,6 +53,7 @@ const getHeatColor = (value: number, maxValue: number): string | null => {
 
 interface TooltipState {
   text: string;
+  label: string;
   x: number;
   y: number;
 }
@@ -57,6 +64,8 @@ const Heatmap = ({
   timeFilteredWorkEntries,
 }: HeatmapProps) => {
   const darkMode = useSettingsStore((s) => s.appSettings.darkMode);
+  const workTasks = useDataStore((s) => s.workTasks);
+  const workTopics = useDataStore((s) => s.workTopics);
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
@@ -64,16 +73,23 @@ const Heatmap = ({
     itemFilter,
     timeFrame,
     workEntries: timeFilteredWorkEntries,
+    workTasks,
+    workTopics,
   });
 
   // Anchor to the hovered tile itself (GitHub-style), not the cursor.
-  const showTooltip = (value: number, e: ReactMouseEvent) => {
+  const showTooltip = (value: number, label: string, e: ReactMouseEvent) => {
     const text =
       value === 0
         ? "No time recorded"
         : `${formatMinutes(value)} minutes worked`;
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltip({ text, x: rect.left + rect.width / 2, y: rect.top });
+    setTooltip({
+      text,
+      label,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    });
   };
 
   if (!heatmapData) return null;
@@ -94,7 +110,8 @@ const Heatmap = ({
             color: "#fafafa",
           }}
         >
-          {tooltip.text}
+          <div>{tooltip.label}</div>
+          <div className="mt-0.5">{tooltip.text}</div>
           <div
             className="absolute left-1/2 -bottom-1 -translate-x-1/2 h-0 w-0"
             style={{
@@ -121,14 +138,15 @@ const Heatmap = ({
 
         {rows.map((row) => (
           <Fragment key={row.id}>
-            <div className="truncate pr-2" title={row.label}>
-              {row.label}
+            <div className="flex items-center pr-2" title={row.label}>
+              <ColorIcon color={intToColor(row.color)} />
+              <span className="truncate">{row.label}</span>
             </div>
             {row.values.map((v, i) => (
               <div
                 key={i}
                 className="h-6 rounded-sm"
-                onMouseEnter={(e) => showTooltip(v, e)}
+                onMouseEnter={(e) => showTooltip(v, row.label, e)}
                 onMouseLeave={() => setTooltip(null)}
                 style={{
                   backgroundColor:
