@@ -22,17 +22,17 @@ interface HeatmapProps {
 const formatMinutes = (seconds: number) =>
   Math.max(1, Math.round(seconds / 60));
 
-// Categorical heat scale: index 0 = lowest non-zero activity,
-// last = highest. Zero cells use their own neutral tile instead.
+// Categorical green heat scale: index 0 = lightest (light work),
+// last = darkest (lots of work). Zero cells keep the gray tile.
 const HEAT_SCALE = [
-  "#440154",
-  "#482878",
-  "#3e4984",
-  "#2c718e",
-  "#21908c",
-  "#38b584",
-  "#2dd4bf",
-  "#a3e635",
+  "#dcfce7",
+  "#bbf7d0",
+  "#86efac",
+  "#4ade80",
+  "#22c55e",
+  "#16a34a",
+  "#15803d",
+  "#14532d",
 ];
 
 const getHeatColor = (value: number, maxValue: number): string | null => {
@@ -49,7 +49,6 @@ interface TooltipState {
   text: string;
   x: number;
   y: number;
-  flip: boolean;
 }
 
 const Heatmap = ({
@@ -72,8 +71,7 @@ const Heatmap = ({
       value === 0
         ? "No time recorded"
         : `${formatMinutes(value)} minutes worked`;
-    const flip = e.clientX + 16 + 150 > window.innerWidth;
-    setTooltip({ text, x: e.clientX + 16, y: e.clientY + 16, flip });
+    setTooltip({ text, x: e.clientX, y: e.clientY });
   };
 
   if (!heatmapData) return null;
@@ -88,8 +86,8 @@ const Heatmap = ({
           className="pointer-events-none fixed z-50 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg"
           style={{
             left: tooltip.x,
-            top: tooltip.y,
-            transform: tooltip.flip ? "translateX(-100%)" : undefined,
+            top: tooltip.y - 6,
+            transform: "translate(-50%, -100%)",
             backgroundColor: darkMode ? "#52525B" : "#18181b",
             color: "#fafafa",
           }}
