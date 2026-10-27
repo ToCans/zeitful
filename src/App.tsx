@@ -1,4 +1,5 @@
 // OpenClaw integration test - Thu Oct 22 10:03:45 UTC 2026
+// pi integration test - Fri Jul 17 21:20 UTC 2026 (comment added to verify git push workflow)
 // App.tsx
 import 'primereact/resources/themes/tailwind-light/theme.css';
 import 'primereact/resources/primereact.min.css';
