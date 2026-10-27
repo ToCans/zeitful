@@ -4,7 +4,6 @@ import TimeFrameSelection from "./timeFrameSelect";
 import { Dropdown } from "primereact/dropdown";
 import DataVisualizationPanel from "./dataVisualizationPanel";
 import ItemFilterButton from "./itemFilterButton";
-import Heatmap from "./heatMap";
 // Hook Imports
 import useGatherPeriodData from "../hooks/useGatherPeriodData";
 // React Imports
@@ -150,12 +149,6 @@ const Statistics = () => {
           <div className="flex w-full h-full min-h-0 items-center justify-center">
             {timeFilteredWorkEntries?.length === 0 ? (
               <p className="text-sm p-2">No data found for this period.</p>
-            ) : visualization === "Heatmap" ? (
-              <Heatmap
-                itemFilter={tabSettings.lastUsedStatisticsTab}
-                timeFrame={tabSettings.lastUsedPeriodTab}
-                timeFilteredWorkEntries={timeFilteredWorkEntries}
-              />
             ) : (
               <DataVisualizationPanel
                 itemFilter={tabSettings.lastUsedStatisticsTab}

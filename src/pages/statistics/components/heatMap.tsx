@@ -8,16 +8,16 @@ import useGatherHeatmapData from "../hooks/useGatherHeatmapData";
 import ColorIcon from "../../../components/ItemManager/colorIcon";
 // Store Imports
 import { useSettingsStore } from "../../../stores/useSettingsStore";
+import { useDataStore } from "../../../stores/useDataStore";
 // Type Imports
 import type {
   StatisticsTab,
   TimePeriod,
   WorkEntry,
 } from "../../../types/types";
-// Store Imports
-import { useDataStore } from "../../../stores/useDataStore";
 // Utils Imports
 import { intToColor } from "../../../utils/colors";
+import { formatMinutes } from "../../../utils/time";
 
 interface HeatmapProps {
   itemFilter: StatisticsTab;
@@ -25,31 +25,47 @@ interface HeatmapProps {
   timeFilteredWorkEntries: WorkEntry[] | null;
 }
 
-// duration is stored in minutes.
-const formatMinutes = (minutes: number) =>
-  Math.max(1, Math.round(minutes));
+// GitHub contribution-graph palette: index 0 = empty cell, last = densest.
+const LIGHT_SCALE = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
+const DARK_SCALE = ["#161b22", "#0e4428", "#006d32", "#26a641", "#39d353"];
 
-// Categorical green heat scale: index 0 = lightest (light work),
-// last = darkest (lots of work). Zero cells keep the gray tile.
-const HEAT_SCALE = [
-  "#dcfce7",
-  "#bbf7d0",
-  "#86efac",
-  "#4ade80",
-  "#22c55e",
-  "#16a34a",
-  "#15803d",
-  "#14532d",
-];
+// Quantize a value into one of the 5 palette buckets (GitHub-style).
+const getHeatIndex = (value: number, maxValue: number): number => {
+  if (value <= 0 || maxValue <= 0) return 0;
+  return Math.min(4, Math.max(1, Math.round((value / maxValue) * 4)));
+};
 
-const getHeatColor = (value: number, maxValue: number): string | null => {
-  if (value <= 0 || maxValue <= 0) return null;
-  const t = value / maxValue;
-  const idx = Math.min(
-    HEAT_SCALE.length - 1,
-    Math.max(0, Math.round(t * (HEAT_SCALE.length - 1))),
+// GitHub highlights the current day with a blue ring. Returns the index of
+// the column containing today, or null if today isn't in the shown range.
+const getTodayIndex = (
+  timeFrame: TimePeriod,
+  workEntries: WorkEntry[],
+): number | null => {
+  const today = new Date();
+  if (timeFrame === "Y") {
+    return today.getMonth(); // columns are Jan..Dec
+  }
+  if (timeFrame === "M") {
+    const ref = new Date(workEntries[0].completion_time);
+    if (
+      ref.getFullYear() === today.getFullYear() &&
+      ref.getMonth() === today.getMonth()
+    ) {
+      return today.getDate() - 1;
+    }
+    return null;
+  }
+  // W: only when the selected week contains today
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
   );
-  return HEAT_SCALE[idx];
+  const latest = workEntries.reduce(
+    (max, e) => Math.max(max, new Date(e.completion_time).getTime()),
+    0,
+  );
+  return latest >= startOfToday.getTime() ? (today.getDay() + 6) % 7 : null;
 };
 
 interface TooltipState {
@@ -78,12 +94,23 @@ const Heatmap = ({
     workTopics,
   });
 
+  if (!heatmapData || !timeFilteredWorkEntries) return null;
+  const { columns, rows, maxValue } = heatmapData;
+
+  const scale = darkMode ? DARK_SCALE : LIGHT_SCALE;
+  const todayIndex = getTodayIndex(timeFrame, timeFilteredWorkEntries);
+
   // Anchor to the hovered tile itself (GitHub-style), not the cursor.
-  const showTooltip = (value: number, label: string, e: ReactMouseEvent) => {
+  const showTooltip = (
+    value: number,
+    label: string,
+    column: string,
+    e: ReactMouseEvent,
+  ) => {
     const text =
       value === 0
         ? "No time recorded"
-        : `${formatMinutes(value)} minutes worked`;
+        : `${column} · ${formatMinutes(value)} worked`;
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltip({
       text,
@@ -92,11 +119,6 @@ const Heatmap = ({
       y: rect.top,
     });
   };
-
-  if (!heatmapData) return null;
-  const { columns, rows, maxValue } = heatmapData;
-
-  const noDataColor = darkMode ? "#3f3f46" : "#f3f4f6";
 
   return (
     <div className="w-full h-full overflow-auto p-1">
@@ -126,36 +148,38 @@ const Heatmap = ({
           document.body
         )}
 
+      {/* Grid: row labels (items) + one fixed-size column per period */}
       <div
-        className="grid gap-1 items-center text-xs"
+        className="grid gap-[3px]"
         style={{
-          gridTemplateColumns: `minmax(5rem, 8rem) repeat(${columns.length}, minmax(1.25rem, 1fr))`,
+          gridTemplateColumns: `minmax(5rem, 8rem) repeat(${columns.length}, 11px)`,
         }}
       >
         <div />
         {columns.map((c) => (
-          <div key={c} className="text-center">
+          <div key={c} className="text-center text-[9px] opacity-70">
             {c}
           </div>
         ))}
 
         {rows.map((row) => (
           <Fragment key={row.id}>
-            <div className="flex items-center pr-2" title={row.label}>
+            <div
+              className="flex items-center gap-1 text-xs"
+              title={row.label}
+            >
               <ColorIcon color={intToColor(row.color)} />
               <span className="truncate">{row.label}</span>
             </div>
             {row.values.map((v, i) => (
               <div
                 key={i}
-                className="h-6 rounded-sm"
-                onMouseEnter={(e) => showTooltip(v, row.label, e)}
+                className="size-[11px] rounded-[2px]"
+                onMouseEnter={(e) => showTooltip(v, row.label, columns[i], e)}
                 onMouseLeave={() => setTooltip(null)}
                 style={{
-                  backgroundColor:
-                    v === 0
-                      ? noDataColor
-                      : getHeatColor(v, maxValue) ?? noDataColor,
+                  backgroundColor: scale[getHeatIndex(v, maxValue)],
+                  outline: todayIndex === i ? "1px solid #1f6feb" : undefined,
                 }}
               />
             ))}
@@ -163,21 +187,17 @@ const Heatmap = ({
         ))}
       </div>
 
-      <div className="flex items-center gap-1.5 mt-2">
-        <p className="text-[10px] opacity-70">no data</p>
-        <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: noDataColor }} />
-        <p className="text-[10px] opacity-70 ml-1">low</p>
-        <div className="flex gap-px">
-          {HEAT_SCALE.map((color, i) => (
-            <div
-              key={i}
-              className="w-4 h-3 rounded-sm"
-              style={{ backgroundColor: color }}
-              title={`level ${i + 1}`}
-            />
-          ))}
-        </div>
-        <p className="text-[10px] opacity-70">high</p>
+      {/* GitHub-style legend */}
+      <div className="flex items-center justify-end gap-1.5 mt-2 text-[10px] opacity-70">
+        <span>Less</span>
+        {scale.map((color, i) => (
+          <div
+            key={i}
+            className="size-[11px] rounded-[2px]"
+            style={{ backgroundColor: color }}
+          />
+        ))}
+        <span>More</span>
       </div>
     </div>
   );

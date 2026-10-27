@@ -58,7 +58,7 @@ const DataVisualizationPanel = ({
             {groupedWorkEntries && (
               <>
                 {visualization === "Heatmap" ? (
-                  <div className="w-full h-48 shrink-0">
+                  <div className="w-full flex-1 min-h-0">
                     <Heatmap
                       itemFilter={itemFilter}
                       timeFrame={timeFrame}
@@ -66,9 +66,11 @@ const DataVisualizationPanel = ({
                     />
                   </div>
                 ) : (
-                  <PiChart itemData={groupedWorkEntries} />
+                  <>
+                    <PiChart itemData={groupedWorkEntries} />
+                    <ItemPercentageBreakdown itemData={groupedWorkEntries} />
+                  </>
                 )}
-                <ItemPercentageBreakdown itemData={groupedWorkEntries} />
               </>
             )}
           </div>
